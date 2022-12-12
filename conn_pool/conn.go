@@ -17,7 +17,7 @@ import (
 
 type conn struct {
 	// connPool 连接池
-	connPool *ConnPool
+	pool *ConnPool
 	// createdAt 当前连接被创建的时间点
 	createdAt time.Time
 
@@ -37,7 +37,7 @@ type conn struct {
 // releaseConn 释放当前连接
 // 将当前连接放回连接池
 func (c *conn) releaseConn(err error) {
-	c.connPool.putConn(c, err, true)
+	c.pool.putConn(c, err, true)
 }
 
 func (c *conn) expired(timeout time.Duration) bool {
@@ -84,4 +84,9 @@ func (c *conn) Close() error {
 	c.closed = true
 	c.mu.Unlock()
 	return nil
+}
+
+type connRequest struct {
+	conn *conn
+	err  error
 }

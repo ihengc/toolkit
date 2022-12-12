@@ -19,12 +19,13 @@ type ConnPool struct {
 	connector    driver.Connector
 	numClosed    uint64
 
-	mu          sync.Mutex
-	freeConn    []*conn
-	nextRequest uint64
-	numOpen     int
-	openerCh    chan struct{}
-	closed      bool
+	mu           sync.Mutex
+	freeConn     []*conn
+	connRequests map[uint64]chan connRequest
+	nextRequest  uint64
+	numOpen      int
+	openerCh     chan struct{}
+	closed       bool
 
 	maxIdleCount      int
 	maxOpen           int
@@ -44,12 +45,9 @@ func (pool *ConnPool) Stats() {
 
 }
 
-// openNewConnection 新建立一个连接
-func (pool *ConnPool) openNewConnection(ctx context.Context) {
-
-}
-
-func (pool *ConnPool) putConn(conn *conn, err error, resetSession bool) {
+// 在有申请连接的请求，并且连接未达到限制时；通知
+// connectionOpener 创建新的连接
+func (pool *ConnPool) maybeOpenNewConnection() {
 
 }
 
@@ -67,11 +65,64 @@ func (pool *ConnPool) connectionOpener(ctx context.Context) {
 	}
 }
 
+// openNewConnection 新建立一个连接
+func (pool *ConnPool) openNewConnection(ctx context.Context) {
+	// 是否需要创建新的连接由 maybeOpenNewConnection 方法控制
+	// numOpen 在 maybeOpenNewConnection 中已经加1
+	raw, err := pool.connector.Connect(ctx)
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+	// 若连接池已经处于关闭状态，此时不应该新建连接
+	if pool.closed {
+		if err == nil {
+			raw.Close()
+		}
+		pool.numOpen--
+		return
+	}
+	// 新建连接出错
+	if err != nil {
+		pool.numOpen--
+		pool.maybeOpenNewConnection()
+		return
+	}
+	// 创建 conn_pool.conn
+	conn := &conn{
+		pool:       pool,
+		createdAt:  time.Now(),
+		returnedAt: time.Now(),
+		raw:        raw,
+	}
+	pool.putConnLocked(conn, err)
+}
+
+// 将是一个 connRequest 得到满足，或者将连接放入空闲池
+func (pool *ConnPool) putConnLocked(conn *conn, err error) bool {
+	if pool.closed {
+		return false
+	}
+	// 池中当前连接数已经超过设置的最大限制数
+	if pool.maxOpen > 0 && pool.numOpen > pool.maxOpen {
+		return false
+	}
+	// 有正在等待创建连接的goroutine
+	if n := len(pool.connRequests); n > 0 {
+		return true
+	} else if err == nil && !pool.closed {
+
+	}
+	return false
+}
+
+func (pool *ConnPool) putConn(conn *conn, err error, resetSession bool) {
+
+}
+
 // New 创建连接池实例
-func New(dbDriver driver.Driver, dataSourceName string) (*ConnPool, error) {
+func New(d driver.Driver, dataSourceName string) (*ConnPool, error) {
 	// 这里需要根据驱动具体实现的方法来新建连接
 	// 检查驱动是否实现了 driver.DriverContext 接口
-	if dCtx, ok := dbDriver.(driver.DriverContext); ok {
+	if dCtx, ok := d.(driver.DriverContext); ok {
 		connector, err := dCtx.OpenConnector(dataSourceName)
 		if err != nil {
 			return nil, err
@@ -82,11 +133,15 @@ func New(dbDriver driver.Driver, dataSourceName string) (*ConnPool, error) {
 	return nil, nil
 }
 
+// NewByConnector 使用 driver.Connector 对象创建连接池
 func NewByConnector(connector driver.Connector) *ConnPool {
 	ctx, cancel := context.WithCancel(context.Background())
+	// 创建连接池
 	pool := &ConnPool{
-		stop: cancel,
+		connector: connector,
+		stop:      cancel,
 	}
+	// 将通过一个单独的goroutine来创建一个新连接
 	go pool.connectionOpener(ctx)
 	return pool
 }
