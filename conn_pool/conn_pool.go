@@ -107,14 +107,58 @@ func (pool *ConnPool) putConnLocked(conn *conn, err error) bool {
 	}
 	// 有正在等待创建连接的goroutine
 	if n := len(pool.connRequests); n > 0 {
+		var (
+			reqCh  chan connRequest
+			reqKey uint64
+		)
+		// 取出一个请求
+		for reqKey, reqCh = range pool.connRequests {
+			break
+		}
+		// 将可用连接传递给该请求，并删除这个请求
+		delete(pool.connRequests, reqKey)
+		if err == nil {
+			conn.inUse = true
+		}
+		reqCh <- connRequest{
+			conn: conn,
+			err:  err,
+		}
 		return true
+		// 无连接请求，则放入空闲队列中
 	} else if err == nil && !pool.closed {
-
+		// 还能放入新连接
+		if pool.maxIdleConns() > len(pool.freeConn) {
+			pool.freeConn = append(pool.freeConn, conn)
+			pool.startCleaner()
+			return true
+		}
+		pool.maxIdleClosed++
 	}
 	return false
 }
 
+// 默认最大空闲连接数
+const defaultMaxIdleConns = 2
+
+// 获取连接池当前设置的最大空闲连接数
+func (pool *ConnPool) maxIdleConns() int {
+	n := pool.maxIdleCount
+	switch {
+	case n == 0:
+		return defaultMaxIdleConns
+	case n < 0:
+		return 0
+	default:
+		return n
+	}
+}
+
 func (pool *ConnPool) putConn(conn *conn, err error, resetSession bool) {
+
+}
+
+func (pool *ConnPool) startCleaner() {
 
 }
 
@@ -130,7 +174,7 @@ func New(d driver.Driver, dataSourceName string) (*ConnPool, error) {
 		return NewByConnector(connector), nil
 	}
 	// 未实现 driver.DriverContext 接口
-	return nil, nil
+	return NewByConnector(dsnConnector{dsn: dataSourceName, driver: d}), nil
 }
 
 // NewByConnector 使用 driver.Connector 对象创建连接池
