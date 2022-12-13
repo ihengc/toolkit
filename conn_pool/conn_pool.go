@@ -189,3 +189,52 @@ func NewByConnector(connector driver.Connector) *ConnPool {
 	go pool.connectionOpener(ctx)
 	return pool
 }
+
+// SetMaxIdleConns 运行中设置最大空闲连接数
+// 若 n <= 0，则表示不保留空闲连接
+func (pool *ConnPool) SetMaxIdleConns(n int) {
+	pool.mu.Lock()
+	if n < 0 {
+		pool.maxIdleCount = n
+	} else {
+		pool.maxIdleCount = -1
+	}
+	// 确保maxIdle不超过maxOpen
+	if pool.maxOpen > 0 && pool.maxIdleConns() > pool.maxOpen {
+		pool.maxIdleCount = pool.maxOpen
+	}
+	// 关闭多余的空闲连接
+	var closing []*conn
+	idleCount := len(pool.freeConn)
+	maxIdle := pool.maxIdleConns()
+	if idleCount > maxIdle {
+		closing = pool.freeConn[maxIdle:]
+		pool.freeConn = pool.freeConn[:maxIdle]
+	}
+	pool.maxIdleClosed = int64(len(closing))
+	pool.mu.Unlock()
+	for _, c := range closing {
+		c.Close()
+	}
+}
+
+func (pool *ConnPool) SetMaxOpenConns(n int) {
+
+}
+
+// connectionCleaner 维护连接池中的连接
+func (pool *ConnPool) connectionCleaner(d time.Duration) {
+	// 最低每秒执行一次
+	const minInterval = time.Second
+	if d < minInterval {
+		d = minInterval
+	}
+	timer := time.NewTimer(d)
+	for {
+		select {
+		case <-timer.C:
+		case <-pool.cleanerCh:
+		}
+		pool.mu.Lock()
+	}
+}
