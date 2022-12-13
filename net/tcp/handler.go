@@ -10,3 +10,11 @@ package tcp
 type Handler interface {
 	Handle(RequestReader, ResponseWriter)
 }
+
+type defaultHandler struct {
+}
+
+func (d *defaultHandler) Handle(reader RequestReader, writer ResponseWriter) {
+	//TODO implement me
+	panic("implement me")
+}

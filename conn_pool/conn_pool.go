@@ -238,3 +238,8 @@ func (pool *ConnPool) connectionCleaner(d time.Duration) {
 		pool.mu.Lock()
 	}
 }
+
+// connectionCleanerRun 清理连接
+func (pool *ConnPool) connectionCleanerRun() {
+
+}

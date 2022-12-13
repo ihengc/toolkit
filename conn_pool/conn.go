@@ -31,7 +31,8 @@ type conn struct {
 
 	inUse bool
 	// returnedAt 连接被创建或返回时的时间点
-	returnedAt time.Time
+	returnedAt   time.Time
+	poolMuClosed bool
 }
 
 // releaseConn 释放当前连接
