@@ -1,0 +1,7 @@
+命名规范：
+1.表名
+2.列名
+
+Create(model)
+
+create table `roles`(id int primary key auto_increment, age not null default 0) comment 'roles';
