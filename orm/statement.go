@@ -1,7 +1,5 @@
 package orm
 
-import "reflect"
-
 /*
 * @author: Heng ChenChi
 * @date: 2022/12/23 0023 15:37
@@ -9,37 +7,18 @@ import "reflect"
 * @description:
 **/
 
+// Statement 表示单个表的各种SQL语句
 type Statement struct {
-	name      string
-	model     interface{}
-	columns   []string
-	engine    *Engine
-	selectSQL string
+	engine *Engine
+	// SelectColumns 查询表字段
+	SelectColumns []string
+	// Distinct 查询去重
+	Distinct bool
+	// Clauses 语句
+	Clauses map[string]string
 }
 
-func (s *Statement) init(model interface{}) {
+// BuildCondition 构建条件语句
+func (s *Statement) BuildCondition() {
 
-}
-
-func NewStatement(model interface{}) *Statement {
-	stmt := &Statement{}
-	stmt.init(model)
-	return stmt
-}
-
-func (s *Statement) All() ([]interface{}, error) {
-	rows, err := s.engine.dbPool.Query(s.selectSQL)
-	if err != nil {
-		return nil, err
-	}
-	results := make([]interface{}, 8)
-	for rows.Next() {
-		p := reflect.New(reflect.TypeOf(s.model)).Pointer()
-		err := rows.Scan(p)
-		if err != nil {
-			return nil, err
-		}
-		results = append(results, p)
-	}
-	return results, nil
 }

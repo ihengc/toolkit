@@ -1,5 +1,7 @@
 package dialect
 
+import "reflect"
+
 /*
 * @author: Heng ChenChi
 * @date: 2022/12/23 0023 15:39
@@ -10,4 +12,5 @@ package dialect
 type DialectInterface interface {
 	GetDriverName() string
 	GetDataSourceName() string
+	DataTypeOf(p reflect.Type) string
 }

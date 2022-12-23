@@ -1,0 +1,24 @@
+create
+
+create table [if not exists] `table_name`
+
+
+type Create struct {
+    表名
+    字段名 字段声明
+    索引类型 索引名称
+    约束
+        主键
+         唯一
+         外键
+         check
+}
+
+列：
+    列名
+    数据类型
+    是否为NULL
+    默认值
+    自增
+    注释
+       
