@@ -25,7 +25,7 @@ func (i intList) Swap(m, n int) {
 
 func TestInsertionSort(t *testing.T) {
 	var dList intList = []int{6, 2, 9, 1, 5}
-	InsertionSort(dList, false)
+	InsertionSort(dList)
 	for i := 1; i < dList.Len(); i++ {
 		if dList[i] < dList[i-1] {
 			t.Fatal("InsertionSort Error")
