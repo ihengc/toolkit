@@ -1,5 +1,7 @@
 package binary_search_tree
 
+import "fmt"
+
 /*
 * @author: Chen Chiheng
 * @date: 2022/12/28 0028 10:21
@@ -53,6 +55,22 @@ func Minimum(n *Node) *Node {
 		current = current.left
 	}
 	return current
+}
+
+// RecursiveMinimum 查找以n为根的树中key最小的结点（递归版本）
+func RecursiveMinimum(n *Node) *Node {
+	if n.left != nil {
+		return RecursiveMinimum(n.left)
+	}
+	return n
+}
+
+// RecursiveMaximum 查找以n为根树中key最大的结点（递归版本）
+func RecursiveMaximum(n *Node) *Node {
+	if n.right != nil {
+		return RecursiveMaximum(n.right)
+	}
+	return n
 }
 
 // Maximum 查找以n为根树中key最大的结点
@@ -123,7 +141,20 @@ func Insert(n *Node, key int) {
 	}
 }
 
-// Delete 删除等于key的结点
-func Delete(n *Node, key int) {
+// InorderWalk 中序遍历（递归版本）
+// 时间复杂度为O(n)，n为二叉查找树的结点数
+func InorderWalk(n *Node) {
+	if n != nil {
+		InorderWalk(n.left) // 沿着结点n的左子树一直递归，直到遇到为left[n]=nil才返回
+		fmt.Println(n.Key)
+		InorderWalk(n.right)
+	}
+}
 
+// IterativeInorderWalk 中序遍历（循环版本）
+func IterativeInorderWalk(n *Node) {
+	// 当当前结点left[current]为nil，就可以打印current
+	// 若当前阶段current的父结点parent[current]不为nil，则需要打印父结点
+	// 将current指针指向right[current]，若right[current]为nil，则将current指针指向parent.parent[current]
+	// 重复上述步骤；否则将current指针指向right[current]，重复上述步骤，直到current不再有父结点
 }
