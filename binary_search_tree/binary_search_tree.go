@@ -1,6 +1,8 @@
 package binary_search_tree
 
-import "fmt"
+import (
+	"fmt"
+)
 
 /*
 * @author: Chen Chiheng
@@ -153,8 +155,24 @@ func InorderWalk(n *Node) {
 
 // IterativeInorderWalk 中序遍历（循环版本）
 func IterativeInorderWalk(n *Node) {
-	// 当当前结点left[current]为nil，就可以打印current
-	// 若当前阶段current的父结点parent[current]不为nil，则需要打印父结点
-	// 将current指针指向right[current]，若right[current]为nil，则将current指针指向parent.parent[current]
-	// 重复上述步骤；否则将current指针指向right[current]，重复上述步骤，直到current不再有父结点
+	current := n
+	stack := make([]*Node, 0)
+	for len(stack) > 0 {
+		if current != nil { // 当前节点指针是否为nil未知，不为nil将其放入栈中
+			stack = append(stack, current)
+			current = current.left // 继续向树的左子树遍历，current.left是否为nil未知
+		} else { // 当前节点指针为nil时，说明已经遍历完整个左子树，当前current的父节点是需要访问的结点
+			current = stack[len(stack)-1] // 栈顶的元素为current的父结点
+			// 访问该结点
+			fmt.Println(current.Key)
+			// 将该结点从栈中移除
+			if len(stack) == 1 {
+				stack = make([]*Node, 0)
+			} else {
+				stack = stack[:len(stack)-1]
+			}
+			// 当前current从叶子结点(Nil)指向了其父结点，我们此时需要访问其右子树
+			current = current.right
+		}
+	}
 }
